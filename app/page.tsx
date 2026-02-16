@@ -38,30 +38,117 @@ function generateId(): string {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 }
 
-function extractAgentMessage(result: any): string {
-  const agentResult = result?.response?.result
-  if (agentResult) {
-    if (typeof agentResult.response === 'string') return agentResult.response
-    if (typeof agentResult.text === 'string') return agentResult.text
-    if (typeof agentResult.message === 'string') return agentResult.message
-    if (typeof agentResult.answer === 'string') return agentResult.answer
-    if (typeof agentResult.content === 'string') return agentResult.content
+/**
+ * Extracts the full agent schema from the API response.
+ * The server-side normalizeResponse may lose schema fields (intent_category, escalated,
+ * resolution_status) when it recursively unwraps the "response" key. To recover
+ * these fields, we parse raw_response as a fallback.
+ *
+ * Returns an object with { text, intent_category, escalated, resolution_status }.
+ */
+function parseAgentSchema(result: any): {
+  text: string
+  intent_category: string
+  escalated: boolean
+  resolution_status: string
+} {
+  const fallback = {
+    text: '',
+    intent_category: 'general',
+    escalated: false,
+    resolution_status: 'diagnosing',
   }
-  if (typeof result?.response?.message === 'string') return result.response.message
-  if (typeof result?.response?.result === 'string') return result.response.result
-  return 'I apologize, but I was unable to process your request. Please try again.'
+
+  // Strategy 1: Check if normalizeResponse preserved the full schema in result.response.result
+  const agentResult = result?.response?.result
+  if (agentResult && typeof agentResult === 'object') {
+    const hasSchemaFields = 'intent_category' in agentResult || 'escalated' in agentResult || 'resolution_status' in agentResult
+    if (hasSchemaFields) {
+      return {
+        text: agentResult.response || agentResult.text || agentResult.message || agentResult.answer || agentResult.content || '',
+        intent_category: agentResult.intent_category || 'general',
+        escalated: agentResult.escalated === true,
+        resolution_status: agentResult.resolution_status || 'diagnosing',
+      }
+    }
+  }
+
+  // Strategy 2: Parse raw_response to recover the full schema
+  // raw_response is the original Lyzr API envelope JSON string
+  if (typeof result?.raw_response === 'string') {
+    try {
+      const envelope = JSON.parse(result.raw_response)
+      // The Lyzr envelope has { response: "<agent JSON string>", ... }
+      let agentPayload = envelope?.response
+      if (typeof agentPayload === 'string') {
+        try {
+          agentPayload = JSON.parse(agentPayload)
+        } catch {
+          // agentPayload stays as a plain text string
+        }
+      }
+      if (agentPayload && typeof agentPayload === 'object') {
+        const hasSchemaFields = 'intent_category' in agentPayload || 'escalated' in agentPayload || 'resolution_status' in agentPayload || 'response' in agentPayload
+        if (hasSchemaFields) {
+          return {
+            text: agentPayload.response || agentPayload.text || agentPayload.message || '',
+            intent_category: agentPayload.intent_category || 'general',
+            escalated: agentPayload.escalated === true,
+            resolution_status: agentPayload.resolution_status || 'diagnosing',
+          }
+        }
+        // Might be a nested structure: envelope.response is an object with its own response key
+        if (typeof agentPayload.response === 'string') {
+          // Check for schema fields at this level too
+          return {
+            text: agentPayload.response,
+            intent_category: agentPayload.intent_category || 'general',
+            escalated: agentPayload.escalated === true,
+            resolution_status: agentPayload.resolution_status || 'diagnosing',
+          }
+        }
+      }
+      // If agentPayload is just a string (plain text response)
+      if (typeof agentPayload === 'string' && agentPayload.trim()) {
+        return { ...fallback, text: agentPayload }
+      }
+    } catch {
+      // raw_response wasn't valid JSON, fall through
+    }
+  }
+
+  // Strategy 3: Extract text from the normalized response paths
+  const text = (() => {
+    if (agentResult) {
+      if (typeof agentResult.response === 'string') return agentResult.response
+      if (typeof agentResult.text === 'string') return agentResult.text
+      if (typeof agentResult.message === 'string') return agentResult.message
+      if (typeof agentResult.answer === 'string') return agentResult.answer
+      if (typeof agentResult.content === 'string') return agentResult.content
+    }
+    if (typeof result?.response?.message === 'string') return result.response.message
+    if (typeof result?.response?.result === 'string') return result.response.result
+    return ''
+  })()
+
+  return { ...fallback, text }
+}
+
+function extractAgentMessage(result: any): string {
+  const parsed = parseAgentSchema(result)
+  return parsed.text || 'I apologize, but I was unable to process your request. Please try again.'
 }
 
 function extractIntentCategory(result: any): string {
-  return result?.response?.result?.intent_category || 'general'
+  return parseAgentSchema(result).intent_category
 }
 
 function extractEscalated(result: any): boolean {
-  return result?.response?.result?.escalated === true
+  return parseAgentSchema(result).escalated
 }
 
 function extractResolutionStatus(result: any): string {
-  return result?.response?.result?.resolution_status || 'diagnosing'
+  return parseAgentSchema(result).resolution_status
 }
 
 function getRelativeTime(timestamp: number): string {
@@ -518,19 +605,17 @@ export default function Page() {
           sessionIdRef.current = result.session_id
         }
 
-        const agentText = extractAgentMessage(result)
-        const intentCategory = extractIntentCategory(result)
-        const escalated = extractEscalated(result)
-        const resolutionStatus = extractResolutionStatus(result)
+        // Parse once to extract all schema fields efficiently
+        const schema = parseAgentSchema(result)
 
         const agentMessage: ChatMessage = {
           id: generateId(),
           role: 'agent',
-          content: agentText,
+          content: schema.text || 'I apologize, but I was unable to process your request. Please try again.',
           timestamp: Date.now(),
-          intentCategory,
-          escalated,
-          resolutionStatus,
+          intentCategory: schema.intent_category,
+          escalated: schema.escalated,
+          resolutionStatus: schema.resolution_status,
         }
 
         setMessages(prev => [...prev, agentMessage])
