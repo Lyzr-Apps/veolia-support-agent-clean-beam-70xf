@@ -4,8 +4,8 @@
       "agent_id": "6992cdd08c5dd1e7b9200d14",
       "name": "Veolia Customer Support Agent",
       "node_id": "veolia_support_agent",
-      "provider": "google",
-      "model": "gemini-2.5-pro",
+      "provider": "openai",
+      "model": "gpt-4.1",
       "has_knowledge_base": true,
       "rag_id": "6992cda7869797813b09585e",
       "rag_name": "veoliawaterserviceskbw351"
