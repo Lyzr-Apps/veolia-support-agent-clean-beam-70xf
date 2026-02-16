@@ -1,0 +1,28 @@
+{
+  "agent_name": "Veolia Customer Support Agent",
+  "agent_id": "6992cdd08c5dd1e7b9200d14",
+  "description": "Handles all residential and commercial water service inquiries including outages, water quality, leak reports, billing disputes, payment tracking, and service start/stop. Uses structured decision logic to diagnose, resolve, de-escalate, and route issues. Maintains empathetic, professional tone adapted to customer mood.",
+  "agent_type": "json",
+  "accessor": "result",
+  "auto_generated": true,
+  "response_schema": {
+    "response": "string",
+    "intent_category": "string",
+    "escalated": "boolean",
+    "resolution_status": "string"
+  },
+  "example_response": {
+    "response": "The agent's conversational response to the customer",
+    "intent_category": "Classified intent: outage, water_quality, leak, billing, payment, service, general",
+    "escalated": false,
+    "resolution_status": "Status: diagnosing, resolved, escalated, pending_info"
+  },
+  "has_module_outputs": true,
+  "module_outputs_example": {
+    "artifact_files": [
+      {
+        "file_url": "https://example.com/file.pdf"
+      }
+    ]
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "agents": [
+    {
+      "agent_id": "6992cdd08c5dd1e7b9200d14",
+      "name": "Veolia Customer Support Agent",
+      "node_id": "veolia_support_agent",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "has_knowledge_base": true,
+      "rag_id": "6992cda7869797813b09585e",
+      "rag_name": "veoliawaterserviceskbw351"
+    }
+  ],
+  "knowledge_bases": [
+    {
+      "rag_id": "6992cda7869797813b09585e",
+      "rag_name": "veoliawaterserviceskbw351",
+      "display_name": "veolia_water_services_kb",
+      "description": "Knowledge base containing Veolia North America website content for customer support - services, coverage areas, rates, policies, programs, and contact information",
+      "crawled_url": "https://www.veolianorthamerica.com/"
+    }
+  ],
+  "schedules": []
+}

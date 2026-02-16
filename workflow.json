@@ -1,0 +1,32 @@
+{
+  "nodes": [
+    {
+      "id": "input_node",
+      "type": "Input",
+      "label": "Customer Message",
+      "nodeCategory": "input"
+    },
+    {
+      "id": "veolia_support_agent",
+      "type": "Agent",
+      "label": "Veolia Customer Support Agent",
+      "nodeCategory": "agent"
+    },
+    {
+      "id": "output_node",
+      "type": "Output",
+      "label": "Agent Response",
+      "nodeCategory": "end"
+    }
+  ],
+  "edges": [
+    {
+      "source": "input_node",
+      "target": "veolia_support_agent"
+    },
+    {
+      "source": "veolia_support_agent",
+      "target": "output_node"
+    }
+  ]
+}

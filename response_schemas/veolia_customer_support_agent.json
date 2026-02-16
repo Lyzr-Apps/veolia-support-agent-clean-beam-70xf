@@ -1,0 +1,13 @@
+{
+  "agent_name": "Veolia Customer Support Agent",
+  "agent_type": "json",
+  "accessor": "json",
+  "has_module_outputs": false,
+  "has_knowledge_base": true,
+  "schema": {
+    "response": "string - The agent's conversational response to the customer",
+    "intent_category": "string - Classified intent: outage, water_quality, leak, billing, payment, service, general",
+    "escalated": "boolean - Whether the issue was escalated to an internal team",
+    "resolution_status": "string - Status: diagnosing, resolved, escalated, pending_info"
+  }
+}
